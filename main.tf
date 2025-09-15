@@ -129,6 +129,9 @@ resource "aws_eks_node_group" "devopsshack" {
 resource "aws_iam_role" "devopsshack_cluster_role" {
   name = "devopsshack-cluster-role"
 
+#Creates an IAM role for the EKS control plane (eks.amazonaws.com).
+#Attaches the AmazonEKSClusterPolicy so the cluster can manage Kubernetes resources.
+
   assume_role_policy = <<EOF
 {
   "Version": "2012-10-17",
@@ -144,6 +147,10 @@ resource "aws_iam_role" "devopsshack_cluster_role" {
 }
 EOF
 }
+
+#assume_role_policy is creating trust relationship 
+#Trusts the EKS service (eks.amazonaws.com).
+#Meaning: the EKS control plane can assume this role.
 
 resource "aws_iam_role_policy_attachment" "devopsshack_cluster_role_policy" {
   role       = aws_iam_role.devopsshack_cluster_role.name
@@ -188,3 +195,8 @@ resource "aws_iam_role_policy_attachment" "devopsshack_node_group_ebs_policy" {
   role       = aws_iam_role.devopsshack_node_group_role.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy"
 }
+
+#AmazonEKSWorkerNodePolicy → lets worker nodes connect to the EKS cluster.
+#AmazonEKS_CNI_Policy → allows the CNI plugin (for Kubernetes networking).
+#AmazonEC2ContainerRegistryReadOnly → lets nodes pull container images from Amazon ECR.
+#AmazonEBSCSIDriverPolicy → allows EBS volumes to be used as persistent storage in Kubernetes.
