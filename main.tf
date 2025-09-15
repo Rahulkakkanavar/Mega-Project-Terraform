@@ -198,6 +198,17 @@ resource "aws_iam_role_policy_attachment" "devopsshack_node_group_ebs_policy" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy"
 }
 
+# Without the node group role, worker nodes cannot:
+
+#Join the EKS cluster.
+
+#Pull container images.
+
+#Handle networking (CNI).
+
+#Mount EBS volumes.
+
+
 #AmazonEKSWorkerNodePolicy → lets worker nodes connect to the EKS cluster.
 #AmazonEKS_CNI_Policy → allows the CNI plugin (for Kubernetes networking).
 #AmazonEC2ContainerRegistryReadOnly → lets nodes pull container images from Amazon ECR.
