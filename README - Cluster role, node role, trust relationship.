@@ -1,0 +1,140 @@
+🔹 What is a Trust Relationship in AWS?
+
+- A trust relationship in AWS is part of an IAM role’s policy that defines who (which principal) is allowed to assume that role.
+- It’s written in the role’s assume role policy document (separate from permission policies).
+
+👉 In simple words:
+
+- Trust relationship = who can assume the role.
+- Permissions policy = what they can do once they assume it.
+
+🔹 Example:
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Service": "ec2.amazonaws.com"
+      },
+      "Action": "sts:AssumeRole"
+    }
+  ]
+}
+
+
+- Principal = ec2.amazonaws.com → EC2 service.
+- Meaning: EC2 instances can assume this IAM role.
+- Once assumed, the permissions policy attached to this role defines what actions the EC2 instance can perform (like S3 read, ECR pull, etc).
+
+****************************************************************************************************************************************************************************************
+
+🔹 Where do we use Trust Relationships?
+
+- EKS cluster role → trusted by eks.amazonaws.com so EKS service can assume it.
+- Node group role → trusted by ec2.amazonaws.com so worker nodes can assume it.
+- Cross-account access → one AWS account trusts another account to assume a role.
+Service roles → Lambda, ECS, EC2, etc.
+
+
+✅ Interview-friendly definition:
+
+"In AWS, a trust relationship is a policy attached to an IAM role that defines who (user, service, or account) can assume that role.
+It’s specified in the role’s assume role policy. For example, in EKS, the control plane trusts eks.amazonaws.com, and worker nodes trust ec2.amazonaws.com to assume their roles. 
+This is separate from permission policies, which define what actions are allowed once the role is assumed."
+
+****************************************************************************************************************************************************************************************
+
+There are two trust relationships being created in that code.
+
+Let’s break it down:
+
+🔹 1. Cluster Role Trust Relationship
+resource "aws_iam_role" "devopsshack_cluster_role" {
+  assume_role_policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Service": "eks.amazonaws.com"
+      },
+      "Action": "sts:AssumeRole"
+    }
+  ]
+}
+EOF
+}
+
+
+- Trusts the EKS service (eks.amazonaws.com).
+- Meaning: the EKS control plane can assume this role.
+
+
+🔹 2. Node Group Role Trust Relationship
+resource "aws_iam_role" "devopsshack_node_group_role" {
+  assume_role_policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Service": "ec2.amazonaws.com"
+      },
+      "Action": "sts:AssumeRole"
+    }
+  ]
+}
+EOF
+}
+
+
+- Trusts the EC2 service (ec2.amazonaws.com).
+- Meaning: the EC2 instances (worker nodes) in the node group can assume this role
+
+✅ So in total:
+
+- One trust relationship for the control plane (EKS service).
+- One trust relationship for the worker nodes (EC2 service).
+
+👉 That’s how AWS knows who is allowed to use the role.
+Without these trust policies, the cluster control plane and worker nodes couldn’t assume their IAM roles
+****************************************************************************************************************************************************************************************
+👉 Diff between Cluster role and node role 
+
+This is core AWS EKS IAM concept that comes up often in interviews. Let’s break it down clearly:
+
+🔹 1. Cluster Role
+
+- The IAM role for the EKS control plane (master).
+- Trusted by → eks.amazonaws.com (EKS service).
+- Purpose: Allows the EKS service to create and manage resources needed for the cluster.
+- Example: attach AmazonEKSClusterPolicy so the EKS control plane can talk to EC2, ELB, networking, etc.
+
+👉 Without the cluster role, your EKS control plane cannot manage worker nodes, networking, or Kubernetes API functions.
+
+****************************************************************************************************************************************************************************************
+🔹 2. Node Group Role
+
+- The IAM role for worker nodes (EC2 instances) that run your Pods.
+- Trusted by → ec2.amazonaws.com (EC2 service).
+- Purpose: Allows EC2 worker nodes in your node group to talk back to the EKS cluster and other AWS services.
+
+- Example policies attached:
+
+- AmazonEKSWorkerNodePolicy → lets nodes register with the EKS cluster.
+- AmazonEKS_CNI_Policy → allows nodes to manage networking for Pods.
+- AmazonEC2ContainerRegistryReadOnly → pull images from ECR.
+- AmazonEBSCSIDriverPolicy → attach EBS volumes for persistent storage.
+
+👉 Without the node group role, worker nodes cannot:
+
+Join the EKS cluster.
+Pull container images.
+Handle networking (CNI).
+Mount EBS volumes.
+
+
+
