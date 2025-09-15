@@ -151,6 +151,8 @@ EOF
 #assume_role_policy is creating trust relationship 
 #Trusts the EKS service (eks.amazonaws.com).
 #Meaning: the EKS control plane can assume this role.
+#That’s how AWS knows who is allowed to use the role.
+#Without these trust policies, the cluster control plane and worker nodes couldn’t assume their IAM roles.
 
 resource "aws_iam_role_policy_attachment" "devopsshack_cluster_role_policy" {
   role       = aws_iam_role.devopsshack_cluster_role.name
